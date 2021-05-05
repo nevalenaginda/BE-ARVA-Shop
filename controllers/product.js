@@ -91,6 +91,7 @@ exports.homePageData = (req, res) => {
           new Date(),
         ],
       },
+      status: "ready",
     },
     limit: 20,
   })
@@ -99,10 +100,42 @@ exports.homePageData = (req, res) => {
         order: [["rating", "desc"]],
         limit: 20,
       })
-        .then((resultPopular) => {
+        .then(async (resultPopular) => {
+          // Added Image For New Product
+          const newProduct = [];
+          for (let i in resultNew) {
+            await picProduct
+              .findAll({ where: { productId: resultNew[i].id } })
+              .then((resultPic) => {
+                if (resultPic) {
+                  newProduct.push({
+                    ...resultNew[i].dataValues,
+                    image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+                  });
+                } else {
+                  newProduct.push({ ...resultNew[i].dataValues });
+                }
+              });
+          }
+          // Added Image For Popular Product
+          const popularProduct = [];
+          for (let i in resultPopular) {
+            await picProduct
+              .findAll({ where: { productId: resultPopular[i].id } })
+              .then((resultPic) => {
+                if (resultPic) {
+                  popularProduct.push({
+                    ...resultPopular[i].dataValues,
+                    image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+                  });
+                } else {
+                  popularProduct.push({ ...resultPopular[i].dataValues });
+                }
+              });
+          }
           formatResult(res, 200, true, "Success Get Homepage Data", {
-            newProduct: resultNew,
-            popularProduct: resultPopular,
+            newProduct,
+            popularProduct,
           });
         })
         .catch(() => {
@@ -120,29 +153,33 @@ exports.getDetailProduct = (req, res) => {
       if (resultProduct) {
         User.findOne({ where: { userId: resultProduct.seller } }).then((resultSeller) => {
           if (resultSeller) {
-            formatResult(res, 200, true, "Success Get Detail Product", {
-              name: resultProduct.name,
-              sellerName: resultSeller.name,
-              sellerId: resultSeller.userId,
-              price: resultProduct.price,
-              color: resultProduct.color,
-              size: resultProduct.size,
-              stock: resultProduct.stock,
-              brand: resultProduct.brand,
-              condition: resultProduct.condition,
-              description: resultProduct.description,
-              category: resultProduct.category,
-              ratingTotal: 0, // Dummy Data
-              rating: {
-                // Dummy Data
-                star1: 0,
-                star2: 0,
-                star3: 0,
-                star4: 0,
-                star5: 4,
-              },
-            }).catch(() => {
-              formatResult(res, 500, false, "Internal Server Error", null);
+            picProduct.findAll({ where: { productId: resultProduct.id } }).then((resultPicture) => {
+              formatResult(res, 200, true, "Success Get Detail Product", {
+                id: resultProduct.id,
+                name: resultProduct.name,
+                image: resultPicture.map((item) => `${process.env.HOST}/images/${item.image}`),
+                sellerName: resultSeller.name,
+                sellerId: resultSeller.userId,
+                price: resultProduct.price,
+                color: resultProduct.color,
+                size: resultProduct.size,
+                stock: resultProduct.stock,
+                brand: resultProduct.brand,
+                condition: resultProduct.condition,
+                description: resultProduct.description,
+                category: resultProduct.category,
+                ratingTotal: 0, // Dummy Data
+                rating: {
+                  // Dummy Data
+                  star1: 0,
+                  star2: 0,
+                  star3: 0,
+                  star4: 0,
+                  star5: 4,
+                },
+              }).catch(() => {
+                formatResult(res, 500, false, "Internal Server Error", null);
+              });
             });
           } else {
             formatResult(res, 404, false, "Seller Not Found", null);
