@@ -5,7 +5,9 @@ module.exports = (sequelize, Sequelize) => {
     },
     name: {
       type: Sequelize.STRING(64),
-      defaultValue: "Anon",
+    },
+    nameStore: {
+      type: Sequelize.STRING(15),
     },
     email: {
       type: Sequelize.STRING(64),
