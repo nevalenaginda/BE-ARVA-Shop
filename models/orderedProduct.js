@@ -6,6 +6,9 @@ module.exports = (sequelize, Sequelize) => {
     userId: {
       type: Sequelize.STRING,
     },
+    quantity: {
+      type: Sequelize.INTEGER,
+    },
     status: {
       type: Sequelize.ENUM,
       values: ["cancelled", "pending", "process", "sending", "completed"],
