@@ -2,6 +2,9 @@ const db = require("../models");
 const formatResult = require("../helpers/formatResult");
 const { getToken, decodeToken, verifyToken } = require("../helpers/jwtHelper");
 const { Op } = require("sequelize");
+const moment = require("moment");
+const { coreApi, CreateTrx } = require("../helpers/corePayment");
+const { picProduct } = require("../models");
 const Ordered = db.ordered;
 const Product = db.product;
 
@@ -42,7 +45,8 @@ exports.makeOrder = async (req, res) => {
                 userId,
                 quantity: dataBody.productId[i].quantity,
                 status: "pending",
-                totalPayment: dataBody.totalPayment,
+                price: resultFindProduct.price,
+                name: resultFindProduct.name,
                 deliveryCost: dataBody.deliveryCost,
                 methodPayment: dataBody.methodPayment,
               });
@@ -55,9 +59,49 @@ exports.makeOrder = async (req, res) => {
     }
   }
   if (dataOrder.length === dataBody.productId.length) {
-    Ordered.bulkCreate(dataOrder).then((resultBulk) => {
-      formatResult(res, 201, true, "Success Make Order", resultBulk);
+    const orderId = `${moment(new Date()).unix()}-${Math.floor(Math.random() * 100)}`;
+    const resultItem = dataOrder.map((item) => {
+      return {
+        id: item.productId,
+        price: parseInt(item.price),
+        quantity: item.quantity,
+        name: item.name,
+      };
     });
+    const resultTotalPayment = resultItem.map((item) => {
+      return {
+        totalPayment: parseInt(item.price) * parseInt(item.quantity),
+      };
+    });
+    const dataPayment = {
+      orderId,
+      emailUser: req.body.email,
+      itemDetails: resultItem,
+      totalPayment:
+        resultTotalPayment.map((item) => item.totalPayment).reduce((a, b) => a + b, 0) +
+        parseInt(dataBody.deliveryCost),
+    };
+    CreateTrx(coreApi, dataPayment)
+      .then((resultPayment) => {
+        if (resultPayment.status_code === "201") {
+          const dataCreate = dataOrder.map((item) => {
+            return {
+              ...item,
+              orderId,
+              methodPayment: "bank_transfer",
+              totalPayment: dataPayment.totalPayment,
+            };
+          });
+          Ordered.bulkCreate(dataCreate).then(() => {
+            formatResult(res, 201, true, "Success Make Order", resultPayment);
+          });
+        } else {
+          formatResult(res, 400, false, "Bad Request", null);
+        }
+      })
+      .catch((err) => {
+        formatResult(res, 500, false, err, null);
+      });
   } else {
     if (dataOutStock.length > 0) {
       formatResult(res, 400, false, `Out of stock with productId ${dataOutStock.join(", ")}`, null);
@@ -73,24 +117,71 @@ exports.getOrderByStatus = (req, res) => {
   const decode = decodeToken(req);
   const userId = decode.userId;
   const arrOrder = [];
-  Ordered.findAll({ where: { status: req.query.status } })
-    .then(async (resultAllOrder) => {
-      for (let i in resultAllOrder) {
-        await Product.findOne({ where: { id: resultAllOrder[i].productId, seller: userId } }).then(
-          (resultProduct) => {
+  if (req.query.status && req.query.status !== "") {
+    Ordered.findAll({ where: { status: req.query.status } })
+      .then(async (resultAllOrder) => {
+        for (let i in resultAllOrder) {
+          await Product.findOne({
+            where: { id: resultAllOrder[i].productId, seller: userId },
+          }).then(async (resultProduct) => {
             if (resultProduct) {
-              if (resultProduct.seller === userId) {
-                arrOrder.push(resultAllOrder[i]);
+              const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
+              if (status.transaction_status === "pending") {
+                arrOrder.push({
+                  ...resultAllOrder[i].dataValues,
+                  transactionStatus: status.transaction_status,
+                });
+              } else {
+                await Ordered.update(
+                  { status: "process" },
+                  { where: { id: resultAllOrder[i].id } }
+                );
               }
             }
+          });
+        }
+        formatResult(res, 200, true, "Success Order By Status", arrOrder);
+      })
+      .catch(() => {
+        formatResult(res, 500, false, "Internal Server Error", null);
+      });
+  } else {
+    Ordered.findAll()
+      .then(async (resultAllOrder) => {
+        for (let i in resultAllOrder) {
+          const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
+          if (status.transaction_status !== "pending") {
+            await Ordered.update({ status: "process" }, { where: { id: resultAllOrder[i].id } });
           }
-        );
-      }
-      formatResult(res, 200, true, "Success Order By Status", arrOrder);
-    })
-    .catch(() => {
-      formatResult(res, 500, false, "Internal Server Error", null);
-    });
+          await Product.findOne({
+            where: { id: resultAllOrder[i].productId, seller: userId },
+          }).then((resultProduct) => {
+            picProduct.findOne({ where: { productId: resultProduct.id } }).then((resultPic) => {
+              if (resultProduct) {
+                arrOrder.push({
+                  id: resultAllOrder[i].orderId,
+                  productId: resultAllOrder[i].productId,
+                  nameProduct: resultProduct.name,
+                  imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
+                  quantity: resultAllOrder[i].quantity,
+                  nameSeller: resultAllOrder[i].seller,
+                  userId: resultAllOrder[i].userId,
+                  quantity: resultAllOrder[i].quantity,
+                  transactionStatus: status.transaction_status,
+                  status:
+                    status.transaction_status !== "pending" ? resultAllOrder[i].status : "pending",
+                  totalPayment: resultAllOrder[i].totalPayment,
+                });
+              }
+            });
+          });
+        }
+        formatResult(res, 200, true, "Success Order By Status", arrOrder);
+      })
+      .catch(() => {
+        formatResult(res, 500, false, "Internal Server Error", null);
+      });
+  }
 };
 
 exports.updateStatusOrder = (req, res) => {

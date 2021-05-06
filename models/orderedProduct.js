@@ -1,5 +1,8 @@
 module.exports = (sequelize, Sequelize) => {
   const OrderedProduct = sequelize.define("ordered_product", {
+    orderId: {
+      type: Sequelize.STRING,
+    },
     productId: {
       type: Sequelize.STRING,
     },
