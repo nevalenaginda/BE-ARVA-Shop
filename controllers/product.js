@@ -196,12 +196,38 @@ exports.getDetailProduct = (req, res) => {
 
 exports.getRecommendationProduct = (req, res) => {
   if (req.query.category) {
-    Product.findAll({ where: { category: req.query.category }, limit: 10 }).then((result) => {
-      formatResult(res, 200, true, "Success Get Recommendation Product", result);
+    Product.findAll({ where: { category: req.query.category }, limit: 10 }).then(async (result) => {
+      const newResult = [];
+      for (let i in result) {
+        await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
+          if (resultPic) {
+            newResult.push({
+              ...result[i].dataValues,
+              image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+            });
+          } else {
+            newResult.push({ ...result[i].dataValues });
+          }
+        });
+      }
+      formatResult(res, 200, true, "Success Get Recommendation Product", newResult);
     });
   } else {
-    Product.findAll({ limit: 10 }).then((result) => {
-      formatResult(res, 200, true, "Success Get All Product", result);
+    Product.findAll({ limit: 10 }).then(async (result) => {
+      const newResult = [];
+      for (let i in result) {
+        await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
+          if (resultPic) {
+            newResult.push({
+              ...result[i].dataValues,
+              image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+            });
+          } else {
+            newResult.push({ ...result[i].dataValues });
+          }
+        });
+      }
+      formatResult(res, 200, true, "Success Get Recommendation Product", newResult);
     });
   }
 };
@@ -255,7 +281,20 @@ exports.detailsPageData = (req, res) => {
 };
 
 exports.getProductByCategory = (req, res) => {
-  Product.findAll({ where: { category: req.query.category } }).then((result) => {
-    formatResult(res, 200, true, "Success Get Product By Category", result);
+  Product.findAll({ where: { category: req.query.category }, limit: 10 }).then(async (result) => {
+    const newResult = [];
+    for (let i in result) {
+      await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
+        if (resultPic) {
+          newResult.push({
+            ...result[i].dataValues,
+            image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+          });
+        } else {
+          newResult.push({ ...result[i].dataValues });
+        }
+      });
+    }
+    formatResult(res, 200, true, "Success Get Product By Category", newResult);
   });
 };
