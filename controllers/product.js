@@ -104,12 +104,14 @@ exports.homePageData = (req, res) => {
           // Added Image For New Product
           const newProduct = [];
           for (let i in resultNew) {
+            const resultSeller = await User.findOne({ where: { userId: resultNew[i].seller } });
             await picProduct
               .findAll({ where: { productId: resultNew[i].id } })
               .then((resultPic) => {
                 if (resultPic) {
                   newProduct.push({
                     ...resultNew[i].dataValues,
+                    sellerName: resultSeller.nameStore,
                     image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
                   });
                 } else {
@@ -120,12 +122,14 @@ exports.homePageData = (req, res) => {
           // Added Image For Popular Product
           const popularProduct = [];
           for (let i in resultPopular) {
+            const resultSeller = await User.findOne({ where: { userId: resultPopular[i].seller } });
             await picProduct
               .findAll({ where: { productId: resultPopular[i].id } })
               .then((resultPic) => {
                 if (resultPic) {
                   popularProduct.push({
                     ...resultPopular[i].dataValues,
+                    sellerName: resultSeller.nameStore,
                     image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
                   });
                 } else {
@@ -151,36 +155,38 @@ exports.getDetailProduct = (req, res) => {
   Product.findOne({ where: { id: req.query.id } })
     .then((resultProduct) => {
       if (resultProduct) {
-        User.findOne({ where: { userId: resultProduct.seller } }).then((resultSeller) => {
+        User.findOne({ where: { userId: resultProduct.seller } }).then(async (resultSeller) => {
           if (resultSeller) {
-            picProduct.findAll({ where: { productId: resultProduct.id } }).then((resultPicture) => {
-              formatResult(res, 200, true, "Success Get Detail Product", {
-                id: resultProduct.id,
-                name: resultProduct.name,
-                image: resultPicture.map((item) => `${process.env.HOST}/images/${item.image}`),
-                sellerName: resultSeller.name,
-                sellerId: resultSeller.userId,
-                price: resultProduct.price,
-                color: resultProduct.color,
-                size: resultProduct.size,
-                stock: resultProduct.stock,
-                brand: resultProduct.brand,
-                condition: resultProduct.condition,
-                description: resultProduct.description,
-                category: resultProduct.category,
-                ratingTotal: 0, // Dummy Data
-                rating: {
-                  // Dummy Data
-                  star1: 0,
-                  star2: 0,
-                  star3: 0,
-                  star4: 0,
-                  star5: 4,
-                },
-              }).catch(() => {
-                formatResult(res, 500, false, "Internal Server Error", null);
+            await picProduct
+              .findAll({ where: { productId: resultProduct.id } })
+              .then((resultPicture) => {
+                formatResult(res, 200, true, "Success Get Detail Product", {
+                  id: resultProduct.id,
+                  name: resultProduct.name,
+                  image: resultPicture.map((item) => `${process.env.HOST}/images/${item.image}`),
+                  sellerName: resultSeller.name,
+                  sellerId: resultSeller.userId,
+                  price: resultProduct.price,
+                  color: resultProduct.color,
+                  size: resultProduct.size,
+                  stock: resultProduct.stock,
+                  brand: resultProduct.brand,
+                  condition: resultProduct.condition,
+                  description: resultProduct.description,
+                  category: resultProduct.category,
+                  ratingTotal: 0, // Dummy Data
+                  rating: {
+                    // Dummy Data
+                    star1: 0,
+                    star2: 0,
+                    star3: 0,
+                    star4: 0,
+                    star5: 4,
+                  },
+                }).catch(() => {
+                  formatResult(res, 500, false, "Internal Server Error", null);
+                });
               });
-            });
           } else {
             formatResult(res, 404, false, "Seller Not Found", null);
           }
@@ -238,35 +244,38 @@ exports.detailsPageData = (req, res) => {
       if (resultProduct) {
         User.findOne({ where: { userId: resultProduct.seller } }).then((resultSeller) => {
           if (resultSeller) {
-            Product.findAll({ where: { category: resultProduct.category }, limit: 10 }).then(
-              (resultRecom) => {
-                formatResult(res, 200, true, "Success Get Detail Product", {
-                  detailsProduct: {
-                    name: resultProduct.name,
-                    sellerName: resultSeller.name,
-                    sellerId: resultSeller.userId,
-                    price: resultProduct.price,
-                    color: resultProduct.color,
-                    size: resultProduct.size,
-                    stock: resultProduct.stock,
-                    brand: resultProduct.brand,
-                    condition: resultProduct.condition,
-                    description: resultProduct.description,
-                    category: resultProduct.category,
-                    ratingTotal: 0, // Dummy Data
-                    rating: {
-                      // Dummy Data
-                      star1: 0,
-                      star2: 0,
-                      star3: 0,
-                      star4: 0,
-                      star5: 4,
+            picProduct.findAll((resultPic) => {
+              Product.findAll({ where: { category: resultProduct.category }, limit: 10 }).then(
+                (resultRecom) => {
+                  formatResult(res, 200, true, "Success Get Detail Product", {
+                    detailsProduct: {
+                      name: resultProduct.name,
+                      sellerName: resultSeller.name,
+                      sellerId: resultSeller.userId,
+                      image: resultPic.map((item) => item.image),
+                      price: resultProduct.price,
+                      color: resultProduct.color,
+                      size: resultProduct.size,
+                      stock: resultProduct.stock,
+                      brand: resultProduct.brand,
+                      condition: resultProduct.condition,
+                      description: resultProduct.description,
+                      category: resultProduct.category,
+                      ratingTotal: 0, // Dummy Data
+                      rating: {
+                        // Dummy Data
+                        star1: 0,
+                        star2: 0,
+                        star3: 0,
+                        star4: 0,
+                        star5: 4,
+                      },
                     },
-                  },
-                  recommendationProduct: resultRecom,
-                });
-              }
-            );
+                    recommendationProduct: resultRecom,
+                  });
+                }
+              );
+            });
           } else {
             formatResult(res, 404, false, "Seller Not Found", null);
           }
