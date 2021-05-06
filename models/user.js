@@ -9,6 +9,9 @@ module.exports = (sequelize, Sequelize) => {
     nameStore: {
       type: Sequelize.STRING(15),
     },
+    descriptionStore: {
+      type: Sequelize.STRING,
+    },
     email: {
       type: Sequelize.STRING(64),
     },
