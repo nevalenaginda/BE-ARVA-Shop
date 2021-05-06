@@ -205,10 +205,12 @@ exports.getRecommendationProduct = (req, res) => {
     Product.findAll({ where: { category: req.query.category }, limit: 10 }).then(async (result) => {
       const newResult = [];
       for (let i in result) {
+        const resultSeller = await User.findOne({ where: { userId: result[i].seller } });
         await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
           if (resultPic) {
             newResult.push({
               ...result[i].dataValues,
+              sellerName: resultSeller.nameStore,
               image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
             });
           } else {
@@ -222,10 +224,12 @@ exports.getRecommendationProduct = (req, res) => {
     Product.findAll({ limit: 10 }).then(async (result) => {
       const newResult = [];
       for (let i in result) {
+        const resultSeller = await User.findOne({ where: { userId: result[i].seller } });
         await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
           if (resultPic) {
             newResult.push({
               ...result[i].dataValues,
+              sellerName: resultSeller.nameStore,
               image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
             });
           } else {
@@ -246,7 +250,28 @@ exports.detailsPageData = (req, res) => {
           if (resultSeller) {
             picProduct.findAll((resultPic) => {
               Product.findAll({ where: { category: resultProduct.category }, limit: 10 }).then(
-                (resultRecom) => {
+                async () => {
+                  const newResult = [];
+                  for (let i in result) {
+                    const resultSeller = await User.findOne({
+                      where: { userId: result[i].seller },
+                    });
+                    await picProduct
+                      .findAll({ where: { productId: result[i].id } })
+                      .then((resultPic) => {
+                        if (resultPic) {
+                          newResult.push({
+                            ...result[i].dataValues,
+                            sellerName: resultSeller.nameStore,
+                            image: resultPic.map(
+                              (item) => `${process.env.HOST}/images/${item.image}`
+                            ),
+                          });
+                        } else {
+                          newResult.push({ ...result[i].dataValues });
+                        }
+                      });
+                  }
                   formatResult(res, 200, true, "Success Get Detail Product", {
                     detailsProduct: {
                       name: resultProduct.name,
@@ -271,7 +296,7 @@ exports.detailsPageData = (req, res) => {
                         star5: 4,
                       },
                     },
-                    recommendationProduct: resultRecom,
+                    recommendationProduct: newResult,
                   });
                 }
               );
@@ -293,14 +318,16 @@ exports.getProductByCategory = (req, res) => {
   Product.findAll({ where: { category: req.query.category }, limit: 10 }).then(async (result) => {
     const newResult = [];
     for (let i in result) {
+      const resultSeller = await User.findOne({ where: { userId: result[i].seller } });
       await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
         if (resultPic) {
           newResult.push({
             ...result[i].dataValues,
+            sellerName: resultSeller.nameStore,
             image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
           });
         } else {
-          newResult.push({ ...result[i].dataValues });
+          newResult.push({ ...result[i].dataValues, sellerName: resultSeller.nameStore });
         }
       });
     }
