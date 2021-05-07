@@ -1,7 +1,7 @@
 const db = require("../models");
 const formatResult = require("../helpers/formatResult");
 const { getToken, decodeToken, verifyToken } = require("../helpers/jwtHelper");
-const { Op } = require("sequelize");
+const { Op, fn, col, where } = require("sequelize");
 const Product = db.product;
 const picProduct = db.picProduct;
 const User = db.user;
@@ -343,8 +343,9 @@ exports.getProductByCategory = (req, res) => {
     });
 };
 
-exports.filterProduct = (req, res) => {
+exports.filterProduct = async (req, res) => {
   function cleanCondition(obj) {
+    const clean = [];
     for (var propName in obj) {
       if (
         obj[propName] === null ||
@@ -353,19 +354,29 @@ exports.filterProduct = (req, res) => {
         obj[propName] === ""
       ) {
         delete obj[propName];
+      } else {
+        clean.push(
+          where(fn("lower", col(Object.keys(obj)[0])), {
+            [Op.like]: `${obj[propName].toLowerCase()}`,
+          })
+        );
       }
     }
-    return obj;
+    return clean;
   }
-  Product.findAll({ where: cleanCondition(req.body) })
-    .then((resultFind) => {
+  const newResult = [];
+  for (let i in cleanCondition(req.body)) {
+    await Product.findAll({ where: cleanCondition(req.body)[i] }).then((resultFind) => {
       if (resultFind.length > 0) {
-        formatResult(res, 200, true, "Success Get Product", resultFind);
-      } else {
-        formatResult(res, 404, false, "Product Not Found", null);
+        newResult.push(resultFind);
       }
-    })
-    .catch(() => {
-      formatResult(res, 500, false, "Internal Server Error", null);
     });
+  }
+  formatResult(
+    res,
+    200,
+    true,
+    "Success Filter Product",
+    [].concat.apply([], newResult).sort((a, b) => a.id - b.id)
+  );
 };
