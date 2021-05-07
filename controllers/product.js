@@ -319,22 +319,53 @@ exports.detailsPageData = (req, res) => {
 };
 
 exports.getProductByCategory = (req, res) => {
-  Product.findAll({ where: { category: req.query.category }, limit: 10 }).then(async (result) => {
-    const newResult = [];
-    for (let i in result) {
-      const resultSeller = await User.findOne({ where: { userId: result[i].seller } });
-      await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
-        if (resultPic) {
-          newResult.push({
-            ...result[i].dataValues,
-            sellerName: resultSeller.nameStore,
-            image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
-          });
-        } else {
-          newResult.push({ ...result[i].dataValues, sellerName: resultSeller.nameStore });
-        }
-      });
+  Product.findAll({ where: { category: req.query.category }, limit: 10 })
+    .then(async (result) => {
+      const newResult = [];
+      for (let i in result) {
+        const resultSeller = await User.findOne({ where: { userId: result[i].seller } });
+        await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
+          if (resultPic) {
+            newResult.push({
+              ...result[i].dataValues,
+              sellerName: resultSeller.nameStore,
+              image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+            });
+          } else {
+            newResult.push({ ...result[i].dataValues, sellerName: resultSeller.nameStore });
+          }
+        });
+      }
+      formatResult(res, 200, true, "Success Get Product By Category", newResult);
+    })
+    .catch(() => {
+      formatResult(res, 500, false, "Internal Server Error", null);
+    });
+};
+
+exports.filterProduct = (req, res) => {
+  function cleanCondition(obj) {
+    for (var propName in obj) {
+      if (
+        obj[propName] === null ||
+        obj[propName] === undefined ||
+        obj[propName] === "null" ||
+        obj[propName] === ""
+      ) {
+        delete obj[propName];
+      }
     }
-    formatResult(res, 200, true, "Success Get Product By Category", newResult);
-  });
+    return obj;
+  }
+  Product.findAll({ where: cleanCondition(req.body) })
+    .then((resultFind) => {
+      if (resultFind.length > 0) {
+        formatResult(res, 200, true, "Success Get Product", resultFind);
+      } else {
+        formatResult(res, 404, false, "Product Not Found", null);
+      }
+    })
+    .catch(() => {
+      formatResult(res, 500, false, "Internal Server Error", null);
+    });
 };
