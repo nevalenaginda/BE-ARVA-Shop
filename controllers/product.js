@@ -13,33 +13,37 @@ exports.sellProduct = (req, res) => {
   req.body.seller = decode.userId;
   const role = decode.role;
   if (role === "seller") {
-    Product.create(req.body).then((result) => {
-      if (req.body.image) {
-        const images = JSON.parse(req.body.image);
-        picProduct
-          .bulkCreate(
-            images.map((item) => {
-              return {
-                ...item,
-                productId: result.id,
-              };
-            })
-          )
-          .then((results) => {
-            formatResult(res, 201, true, "Success Sell Product", {
-              id: result.id,
-              name: result.name,
-              price: result.price,
-              stock: result.stock,
-              condition: result.condition,
-              image: JSON.stringify(
-                results.map((item) => `${process.env.HOST}/images/${item.image}`)
-              ),
-              description: result.description,
+    Product.create(req.body)
+      .then((result) => {
+        if (req.body.image) {
+          const images = JSON.parse(req.body.image);
+          picProduct
+            .bulkCreate(
+              images.map((item) => {
+                return {
+                  ...item,
+                  productId: result.id,
+                };
+              })
+            )
+            .then((results) => {
+              formatResult(res, 201, true, "Success Sell Product", {
+                id: result.id,
+                name: result.name,
+                price: result.price,
+                stock: result.stock,
+                condition: result.condition,
+                image: JSON.stringify(
+                  results.map((item) => `${process.env.HOST}/images/${item.image}`)
+                ),
+                description: result.description,
+              });
             });
-          });
-      }
-    });
+        }
+      })
+      .catch((err) => {
+        formatResult(res, 400, false, err.message, null);
+      });
   } else {
     formatResult(res, 400, false, "Only Admin Can Sell Product", null);
   }

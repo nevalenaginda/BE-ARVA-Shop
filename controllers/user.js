@@ -214,3 +214,22 @@ exports.resendMail = (req, res) => {
       formatResult(res, 500, false, err, null);
     });
 };
+
+exports.getDetailUser = (req, res) => {
+  const verify = verifyToken(req);
+  if (verify !== true) return formatResult(res, 400, false, verify, null);
+  const decode = decodeToken(req);
+  const userId = decode.userId;
+  User.findOne({ where: { userId } })
+    .then((resultFindUser) => {
+      if (resultFindUser) {
+        delete resultFindUser.password;
+        formatResult(res, 200, true, "Success Get Detail User", resultFindUser);
+      } else {
+        formatResult(res, 400, false, "UserId Not Found!", null);
+      }
+    })
+    .catch(() => {
+      formatResult(res, 500, false, "Internal Server Error", null);
+    });
+};
