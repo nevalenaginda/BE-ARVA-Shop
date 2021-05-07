@@ -6,6 +6,7 @@ const router = require("express").Router();
 
 router.post("/", user.register);
 router.put("/", Auth, middleUpload("avatar"), user.update);
+router.get("/profile", Auth, user.getDetailUser);
 router.post("/resend", user.resendMail);
 router.post("/reset", user.requestResetPassword);
 router.put("/reset", user.resetPassword);
