@@ -40,6 +40,10 @@ module.exports = (sequelize, Sequelize) => {
       values: ["ready", "sold out", "archived"],
       defaultValue: "ready",
     },
+    isArchive: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: false,
+    },
   });
 
   return Product;

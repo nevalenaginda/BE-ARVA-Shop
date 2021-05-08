@@ -5,6 +5,7 @@ const { AuthSeller, Auth, AuthRefresh, AuthVerif } = require("../middleware/auth
 const router = require("express").Router();
 
 router.post("/", AuthSeller, middleUpload("image"), product.sellProduct);
+router.get("/product", AuthSeller, product.getProductForSeller);
 router.get("/new", product.getNewProduct);
 router.get("/popular", product.getPopularProduct);
 router.get("/home", product.homePageData);

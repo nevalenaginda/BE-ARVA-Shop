@@ -377,7 +377,7 @@ exports.filterProduct = async (req, res) => {
       } else {
         clean.push(
           where(fn("lower", col(Object.keys(obj)[0])), {
-            [Op.like]: `${obj[propName].toLowerCase()}`,
+            [Op.like]: `%${obj[propName].toLowerCase()}%`,
           })
         );
       }
@@ -415,6 +415,63 @@ exports.searchProduct = (req, res) => {
       }
     })
     .catch(() => {
+      formatResult(res, 500, false, "Internal Server Error", null);
+    });
+};
+
+exports.getProductForSeller = (req, res) => {
+  const verify = verifyToken(req);
+  if (verify !== true) return formatResult(res, 400, false, verify, null);
+  const decode = decodeToken(req);
+  const userId = decode.userId;
+  function cleanCondition(obj) {
+    for (var propName in obj) {
+      if (
+        obj[propName] === null ||
+        obj[propName] === undefined ||
+        obj[propName] === "null" ||
+        obj[propName] === ""
+      ) {
+        delete obj[propName];
+      }
+    }
+    return obj;
+  }
+  const condition = {
+    seller: userId,
+    stock: req.query.soldout ? 0 : null,
+    name: req.query.name
+      ? where(fn("lower", col("name")), {
+          [Op.like]: `%${req.query.name.toLowerCase()}%`,
+        })
+      : null,
+    isArchive: req.query.archive ? true : null,
+  };
+  Product.findAll({ where: cleanCondition(condition) })
+    .then(async (resultProduct) => {
+      if (resultProduct.length > 0) {
+        const newResult = [];
+        for (let i in resultProduct) {
+          await picProduct
+            .findAll({ where: { productId: resultProduct[i].id } })
+            .then((resultPic) => {
+              if (resultPic) {
+                newResult.push({
+                  ...resultProduct[i].dataValues,
+                  image: resultPic.map((item) => item.image),
+                });
+              } else {
+                newResult.push(resultProduct[i]);
+              }
+            });
+        }
+        formatResult(res, 200, true, "Success Get Product", newResult);
+      } else {
+        formatResult(res, 404, false, "Product Not Found", null);
+      }
+    })
+    .catch((err) => {
+      console.log(err);
       formatResult(res, 500, false, "Internal Server Error", null);
     });
 };
