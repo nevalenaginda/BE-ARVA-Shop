@@ -220,3 +220,65 @@ exports.updateStatusOrder = (req, res) => {
       });
   });
 };
+
+exports.getOrderUser = (req, res) => {
+  const verify = verifyToken(req);
+  if (verify !== true) return formatResult(res, 400, false, verify, null);
+  const decode = decodeToken(req);
+  const userId = decode.userId;
+  const arrOrder = [];
+  Ordered.findAll({ where: { userId } })
+    .then(async (resultAllOrder) => {
+      if (resultAllOrder.length > 0) {
+        for (let i in resultAllOrder) {
+          const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
+          if (status.transaction_status !== "pending") {
+            if (status.transaction_status === "expire") {
+              await Ordered.update(
+                { status: "cancelled" },
+                { where: { id: resultAllOrder[i].id } }
+              );
+            } else {
+              await Ordered.update({ status: "process" }, { where: { id: resultAllOrder[i].id } });
+            }
+          }
+          await Product.findOne({
+            where: { id: resultAllOrder[i].productId },
+          }).then((resultProduct) => {
+            picProduct.findOne({ where: { productId: resultProduct.id } }).then((resultPic) => {
+              if (resultProduct) {
+                arrOrder.push({
+                  id: resultAllOrder[i].orderId,
+                  productId: resultAllOrder[i].productId,
+                  nameProduct: resultProduct.name,
+                  imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
+                  quantity: resultAllOrder[i].quantity,
+                  nameSeller: resultAllOrder[i].seller,
+                  userId: resultAllOrder[i].userId,
+                  quantity: resultAllOrder[i].quantity,
+                  transactionStatus: status.transaction_status,
+                  status:
+                    status.transaction_status !== "pending"
+                      ? status.transaction_status === "expire"
+                        ? "cancelled"
+                        : resultAllOrder[i].status
+                      : "pending",
+                  totalPayment: resultAllOrder[i].totalPayment,
+                });
+              }
+            });
+          });
+        }
+        if (arrOrder.length > 0) {
+          formatResult(res, 200, true, "Success Order By Status", arrOrder);
+        } else {
+          formatResult(res, 404, false, "Status Order Not Found", null);
+        }
+      } else {
+        formatResult(res, 404, false, "Status Order Not Found", null);
+      }
+    })
+    .catch((err) => {
+      formatResult(res, 500, false, "Internal Server Error", null);
+    });
+};

@@ -17,6 +17,6 @@ db.picProduct = require("./pictureProduct")(sequelize, Sequelize);
 db.address = require("./addressUser")(sequelize, Sequelize);
 db.ordered = require("./orderedProduct")(sequelize, Sequelize);
 db.cart = require("./cart")(sequelize, Sequelize);
-// db.message = require("./")(sequelize, Sequelize);
+db.messages = require("./messages")(sequelize, Sequelize);
 
 module.exports = db;

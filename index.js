@@ -54,11 +54,15 @@ app.use("*", (req, res) => {
 });
 
 // io.on("connection", (socket) => {
-//   const users = db.user;
+//   const messages = db.messages;
 //   socket.join(`user:${socket.handshake.query.sender}`);
-//   users.update({ socketId: socket.id }, { where: { userId: socket.handshake.query.sender } });
 //   socket.broadcast.emit("online", { userId: socket.handshake.query.sender });
-//   socket.on("sendMsg", (msg) => {
+//   socket.on("sendMsg", async (msg) => {
+//     await messages.create({
+//       to: msg.to,
+//       from: socket.handshake.query.sender,
+//       messageBody: msg.message,
+//     });
 //     socket.to(`user:${msg.to}`).emit("recMsg", {
 //       to: msg.to,
 //       from: socket.handshake.query.sender,
@@ -73,7 +77,6 @@ app.use("*", (req, res) => {
 //     });
 //   });
 //   socket.on("disconnect", async () => {
-//     await users.update({ socketId: `` }, { where: { userId: socket.handshake.query.sender } });
 //     socket.broadcast.emit("online", { userId: socket.handshake.query.sender });
 //   });
 // });
