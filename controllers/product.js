@@ -189,9 +189,10 @@ exports.getDetailProduct = (req, res) => {
                     star4: 0,
                     star5: 4,
                   },
-                }).catch(() => {
-                  formatResult(res, 500, false, "Internal Server Error", null);
                 });
+              })
+              .catch(() => {
+                formatResult(res, 500, false, "Internal Server Error", null);
               });
           } else {
             formatResult(res, 404, false, "Seller Not Found", null);
