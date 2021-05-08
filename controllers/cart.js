@@ -110,7 +110,10 @@ exports.getCart = (req, res) => {
               }
             );
           }
-          formatResult(res, 200, true, "Success Get Cart", newResult);
+          formatResult(res, 200, true, "Success Get Cart", {
+            dataCart: newResult,
+            totalPayment: newResult.map((item) => item.totalPrice).reduce((a, b) => a + b, 0),
+          });
         } catch (error) {
           console.log(error);
           formatResult(res, 500, false, "Internal Server Error", null);
