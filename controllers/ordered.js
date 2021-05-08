@@ -151,7 +151,14 @@ exports.getOrderByStatus = (req, res) => {
         for (let i in resultAllOrder) {
           const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
           if (status.transaction_status !== "pending") {
-            await Ordered.update({ status: "process" }, { where: { id: resultAllOrder[i].id } });
+            if (status.transaction_status === "expire") {
+              await Ordered.update(
+                { status: "cancelled" },
+                { where: { id: resultAllOrder[i].id } }
+              );
+            } else {
+              await Ordered.update({ status: "process" }, { where: { id: resultAllOrder[i].id } });
+            }
           }
           await Product.findOne({
             where: { id: resultAllOrder[i].productId, seller: userId },
@@ -169,7 +176,11 @@ exports.getOrderByStatus = (req, res) => {
                   quantity: resultAllOrder[i].quantity,
                   transactionStatus: status.transaction_status,
                   status:
-                    status.transaction_status !== "pending" ? resultAllOrder[i].status : "pending",
+                    status.transaction_status !== "pending"
+                      ? status.transaction_status === "expire"
+                        ? "cancelled"
+                        : resultAllOrder[i].status
+                      : "pending",
                   totalPayment: resultAllOrder[i].totalPayment,
                 });
               }
