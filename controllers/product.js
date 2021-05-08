@@ -2,6 +2,8 @@ const db = require("../models");
 const formatResult = require("../helpers/formatResult");
 const { getToken, decodeToken, verifyToken } = require("../helpers/jwtHelper");
 const { Op, fn, col, where } = require("sequelize");
+const getPagination = require("../helpers/getPagination");
+const getPagingData = require("../helpers/getPagingData");
 const Product = db.product;
 const picProduct = db.picProduct;
 const User = db.user;
@@ -319,24 +321,41 @@ exports.detailsPageData = (req, res) => {
 };
 
 exports.getProductByCategory = (req, res) => {
-  Product.findAll({ where: { category: req.query.category }, limit: 10 })
+  const { page, size } = req.query;
+  const { limit, offset } = getPagination(page, size);
+  Product.findAndCountAll({
+    where: { category: { [Op.like]: `%${req.query.category}%` } },
+    limit: parseInt(limit),
+    offset: parseInt(offset),
+  })
     .then(async (result) => {
-      const newResult = [];
-      for (let i in result) {
-        const resultSeller = await User.findOne({ where: { userId: result[i].seller } });
-        await picProduct.findAll({ where: { productId: result[i].id } }).then((resultPic) => {
-          if (resultPic) {
-            newResult.push({
-              ...result[i].dataValues,
-              sellerName: resultSeller.nameStore,
-              image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+      if (result.rows.length > 0) {
+        const newResult = getPagingData(result, page, limit);
+        const newestResult = [];
+        for (let i in newResult.product) {
+          const resultSeller = await User.findOne({
+            where: { userId: newResult.product[i].seller },
+          });
+          await picProduct
+            .findAll({ where: { productId: newResult.product[i].id } })
+            .then((resultPic) => {
+              if (resultPic) {
+                newestResult.push({
+                  ...newResult.product[i].dataValues,
+                  sellerName: resultSeller.nameStore,
+                  image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+                });
+              } else {
+                newestResult.push({
+                  ...newResult.product[i].dataValues,
+                  sellerName: resultSeller.nameStore,
+                });
+              }
             });
-          } else {
-            newResult.push({ ...result[i].dataValues, sellerName: resultSeller.nameStore });
-          }
-        });
+        }
+        newResult.product = newestResult;
+        formatResult(res, 200, true, "Success Get Product By Category", newResult);
       }
-      formatResult(res, 200, true, "Success Get Product By Category", newResult);
     })
     .catch(() => {
       formatResult(res, 500, false, "Internal Server Error", null);
@@ -372,11 +391,29 @@ exports.filterProduct = async (req, res) => {
       }
     });
   }
-  formatResult(
-    res,
-    200,
-    true,
-    "Success Filter Product",
-    [].concat.apply([], newResult).sort((a, b) => a.id - b.id)
-  );
+  if (newResult.length > 0) {
+    formatResult(
+      res,
+      200,
+      true,
+      "Success Filter Product",
+      [].concat.apply([], newResult).sort((a, b) => a.id - b.id)
+    );
+  } else {
+    formatResult(res, 404, false, "Product Not Found", null);
+  }
+};
+
+exports.searchProduct = (req, res) => {
+  Product.findAll({ where: { name: { [Op.like]: `%${req.body.name}%` } } })
+    .then((result) => {
+      if (result.length > 0) {
+        formatResult(res, 200, true, "Success Search Product", result);
+      } else {
+        formatResult(res, 404, false, "Product Not Found", null);
+      }
+    })
+    .catch(() => {
+      formatResult(res, 500, false, "Internal Server Error", null);
+    });
 };

@@ -12,6 +12,7 @@ router.get("/details", product.getDetailProduct);
 router.get("/recom", product.getRecommendationProduct);
 router.get("/detailpage", product.detailsPageData);
 router.get("/list", product.getProductByCategory);
+router.post("/search", product.searchProduct);
 router.post("/filter", product.filterProduct);
 
 module.exports = router;
