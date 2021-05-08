@@ -458,7 +458,7 @@ exports.getProductForSeller = (req, res) => {
               if (resultPic) {
                 newResult.push({
                   ...resultProduct[i].dataValues,
-                  image: resultPic.map((item) => item.image),
+                  image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
                 });
               } else {
                 newResult.push(resultProduct[i]);
