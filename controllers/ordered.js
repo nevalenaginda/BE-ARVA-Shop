@@ -226,8 +226,25 @@ exports.getOrderUser = (req, res) => {
   if (verify !== true) return formatResult(res, 400, false, verify, null);
   const decode = decodeToken(req);
   const userId = decode.userId;
+  function cleanCondition(obj) {
+    for (var propName in obj) {
+      if (
+        obj[propName] === null ||
+        obj[propName] === undefined ||
+        obj[propName] === "null" ||
+        obj[propName] === ""
+      ) {
+        delete obj[propName];
+      }
+    }
+    return obj;
+  }
+  const condition = {
+    userId,
+    status: req.query.status || null,
+  };
   const arrOrder = [];
-  Ordered.findAll({ where: { userId } })
+  Ordered.findAll({ where: cleanCondition(condition) })
     .then(async (resultAllOrder) => {
       if (resultAllOrder.length > 0) {
         for (let i in resultAllOrder) {
