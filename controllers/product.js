@@ -407,9 +407,24 @@ exports.filterProduct = async (req, res) => {
 
 exports.searchProduct = (req, res) => {
   Product.findAll({ where: { name: { [Op.like]: `%${req.body.name}%` } } })
-    .then((result) => {
-      if (result.length > 0) {
-        formatResult(res, 200, true, "Success Search Product", result);
+    .then(async (resultProduct) => {
+      if (resultProduct.length > 0) {
+        const newResult = [];
+        for (let i in resultProduct) {
+          await picProduct
+            .findAll({ where: { productId: resultProduct[i].id } })
+            .then((resultPic) => {
+              if (resultPic) {
+                newResult.push({
+                  ...resultProduct[i].dataValues,
+                  image: resultPic.map((item) => `${process.env.HOST}/images/${item.image}`),
+                });
+              } else {
+                newResult.push(resultProduct[i]);
+              }
+            });
+        }
+        formatResult(res, 200, true, "Success Get Product", newResult);
       } else {
         formatResult(res, 404, false, "Product Not Found", null);
       }
