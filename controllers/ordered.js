@@ -90,6 +90,7 @@ exports.makeOrder = async (req, res) => {
               orderId,
               methodPayment: "bank_transfer",
               totalPayment: dataPayment.totalPayment,
+              vaNumber: resultPayment.va_numbers[0].va_number,
             };
           });
           Ordered.bulkCreate(dataCreate).then(() => {
