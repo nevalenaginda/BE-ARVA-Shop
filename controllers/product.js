@@ -485,8 +485,25 @@ exports.getProductForSeller = (req, res) => {
         formatResult(res, 404, false, "Product Not Found", null);
       }
     })
-    .catch((err) => {
-      console.log(err);
+    .catch(() => {
+      formatResult(res, 500, false, "Internal Server Error", null);
+    });
+};
+
+exports.deleteProduct = (req, res) => {
+  const verify = verifyToken(req);
+  if (verify !== true) return formatResult(res, 400, false, verify, null);
+  const decode = decodeToken(req);
+  const userId = decode.userId;
+  Product.destroy({ where: { seller: userId, id: req.query.id } })
+    .then((result) => {
+      if (result) {
+        formatResult(res, 200, true, "Success Delete Product", null);
+      } else {
+        formatResult(res, 400, false, "Bad Request", null);
+      }
+    })
+    .catch(() => {
       formatResult(res, 500, false, "Internal Server Error", null);
     });
 };

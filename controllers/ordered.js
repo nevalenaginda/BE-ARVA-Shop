@@ -281,6 +281,7 @@ exports.getOrderUser = (req, res) => {
                         : resultAllOrder[i].status
                       : "pending",
                   totalPayment: resultAllOrder[i].totalPayment,
+                  vaNumber: status.va_numbers[0].va_number,
                 });
               }
             });
