@@ -13,7 +13,7 @@ exports.makeOrder = async (req, res) => {
   if (verify !== true) return formatResult(res, 400, false, verify, null);
   const decode = decodeToken(req);
   const userId = decode.userId;
-  req.body.productId = JSON.parse(JSON.parse(req.body.productId));
+  req.body.productId = JSON.parse(req.body.productId);
   req.body.userId = userId;
   const dataBody = req.body;
   const dataOrder = [];
