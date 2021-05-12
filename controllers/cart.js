@@ -132,6 +132,7 @@ exports.deleteCart = (req, res) => {
   if (verify !== true) return formatResult(res, 400, false, verify, null);
   const decode = decodeToken(req);
   const userId = decode.userId;
+  console.log(req.body)
   Cart.destroy({ where: { id: JSON.parse(req.body.cartId), userId } })
     .then((resultDestroy) => {
       if (resultDestroy) {
