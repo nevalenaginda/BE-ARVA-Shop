@@ -44,7 +44,7 @@ exports.editAddress = (req, res) => {
   const decode = decodeToken(req);
   const userId = decode.userId;
   Address.findAll({ where: { userId, isPrimary: true } }).then(async (resultAllAddress) => {
-    if (resultAllAddress.length > 0) {
+    if (resultAllAddress.length > 0 && req.body.isPrimary) {
       await Address.update({ isPrimary: false }, { where: { id: resultAllAddress[0].id } });
     }
     Address.update(req.body, { where: { id: req.query.id, userId } })
