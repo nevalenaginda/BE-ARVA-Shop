@@ -75,6 +75,7 @@ const middleUpload = (key) => (req, res, next) => {
   } else {
     uploadMultiple(key)(req, res, (err) => {
       if (err) {
+console.log(err)
         if (err.message) {
           formatResult(res, 400, false, err.message, null);
         } else {

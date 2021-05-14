@@ -121,6 +121,7 @@ exports.getOrderByStatus = (req, res) => {
   if (req.query.status && req.query.status !== "") {
     Ordered.findAll({ where: { status: req.query.status } })
       .then(async (resultAllOrder) => {
+        console.log(resultAllOrder)
         for (let i in resultAllOrder) {
           await Product.findOne({
             where: { id: resultAllOrder[i].productId, seller: userId },
@@ -133,10 +134,12 @@ exports.getOrderByStatus = (req, res) => {
                   transactionStatus: status.transaction_status,
                 });
               } else {
+                if(resultAllOrder[i].status !== "process"){
                 await Ordered.update(
                   { status: "process" },
                   { where: { id: resultAllOrder[i].id } }
                 );
+                }
               }
             }
           });
@@ -157,17 +160,21 @@ exports.getOrderByStatus = (req, res) => {
                 { status: "cancelled" },
                 { where: { id: resultAllOrder[i].id } }
               );
-            } else {
-              await Ordered.update({ status: "process" }, { where: { id: resultAllOrder[i].id } });
+            } else if(resultAllOrder[i].status !== "process"){
+              if(resultAllOrder[i].status !== "completed"){
+              await Ordered.update( {status: "process"}, {where:{id:resultAllOrder[i].id}})
+              }
             }
           }
           await Product.findOne({
             where: { id: resultAllOrder[i].productId, seller: userId },
           }).then((resultProduct) => {
+            if(resultProduct){
             picProduct.findOne({ where: { productId: resultProduct.id } }).then((resultPic) => {
-              if (resultProduct) {
+              if (resultPic) {
                 arrOrder.push({
                   id: resultAllOrder[i].orderId,
+                  orderId: resultAllOrder[i].id,
                   productId: resultAllOrder[i].productId,
                   nameProduct: resultProduct.name,
                   imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
@@ -186,11 +193,13 @@ exports.getOrderByStatus = (req, res) => {
                 });
               }
             });
+            }
           });
         }
         formatResult(res, 200, true, "Success Order By Status", arrOrder);
       })
-      .catch(() => {
+      .catch((err) => {
+console.log(err)
         formatResult(res, 500, false, "Internal Server Error", null);
       });
   }
@@ -202,7 +211,7 @@ exports.updateStatusOrder = (req, res) => {
   const decode = decodeToken(req);
   const userId = decode.userId;
   Ordered.findOne({ where: { id: req.body.orderId } }).then((resultFindOrder) => {
-    Product.findOne({ where: { id: resultFindOrder.id, seller: userId } })
+    Product.findOne({ where: { id: resultFindOrder.productId, seller: userId } })
       .then((resultProduct) => {
         if (resultProduct) {
           Ordered.update({ status: req.body.status }, { where: { id: req.body.orderId } }).then(
@@ -247,6 +256,7 @@ exports.getOrderUser = (req, res) => {
   const arrOrder = [];
   Ordered.findAll({ where: cleanCondition(condition) })
     .then(async (resultAllOrder) => {
+
       if (resultAllOrder.length > 0) {
         for (let i in resultAllOrder) {
           const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
@@ -262,9 +272,9 @@ exports.getOrderUser = (req, res) => {
           }
           await Product.findOne({
             where: { id: resultAllOrder[i].productId },
-          }).then((resultProduct) => {
-            picProduct.findOne({ where: { productId: resultProduct.id } }).then((resultPic) => {
-              if (resultProduct) {
+          }).then(async(resultProduct) => {
+          await picProduct.findOne({ where: { productId: resultProduct.id } }).then((resultPic) => {
+              if (resultPic) {
                 arrOrder.push({
                   id: resultAllOrder[i].orderId,
                   productId: resultAllOrder[i].productId,
@@ -298,6 +308,7 @@ exports.getOrderUser = (req, res) => {
       }
     })
     .catch((err) => {
+      console.log(err)
       formatResult(res, 500, false, "Internal Server Error", null);
     });
 };

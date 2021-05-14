@@ -170,7 +170,7 @@ exports.getDetailProduct = (req, res) => {
                   id: resultProduct.id,
                   name: resultProduct.name,
                   image: resultPicture.map((item) => `${process.env.HOST}/images/${item.image}`),
-                  sellerName: resultSeller.name,
+                  sellerName: resultSeller.nameStore,
                   sellerId: resultSeller.userId,
                   price: resultProduct.price,
                   color: resultProduct.color,

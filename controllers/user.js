@@ -108,6 +108,7 @@ exports.update = async (req, res) => {
   const userId = decode.userId;
   if (req.body.active) delete req.body.active;
   if (req.body.password) delete req.body.password;
+  console.log(req.body)
   User.update(req.body, { where: { userId }, order: ["userId"] })
     .then(() => {
       User.findOne({ where: { userId }, order: ["userId"] })
