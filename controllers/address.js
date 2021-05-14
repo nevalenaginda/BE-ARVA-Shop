@@ -11,7 +11,7 @@ exports.addAddress = (req, res) => {
   const userId = decode.userId;
   req.body.userId = userId;
   Address.findAll({ where: { userId, isPrimary: true } }).then(async (resultAllAddressPrimary) => {
-    if (resultAllAddressPrimary.length < 0) {
+    if (resultAllAddressPrimary.length === 0) {
       req.body.isPrimary = true;
     }
     Address.create(req.body)
@@ -72,7 +72,7 @@ exports.deleteAddress = (req, res) => {
         Address.destroy({ where: { id: req.query.id } }).then(() => {
           Address.findAll({ where: { userId, isPrimary: true } }).then(
             (resultAllAddressPrimary) => {
-              if (resultAllAddressPrimary.length < 0) {
+              if (resultAllAddressPrimary.length === 0) {
                 Address.findAll({ where: { userId } }).then(async (resultAllAddress) => {
                   if (resultAllAddress.length > 0) {
                     await Address.update(
