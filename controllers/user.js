@@ -98,7 +98,13 @@ exports.login = async (req, res) => {
       }
     }
   } else {
-    formatResult(res, 400, false, `Email Not Registered As ${role.toUpperCase()}`, null);
+    formatResult(
+      res,
+      400,
+      false,
+      `Your Email Not Registered as ${role === "user" ? "Customer" : "Seller"}`,
+      null
+    );
   }
 };
 
