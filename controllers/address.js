@@ -38,17 +38,22 @@ exports.editAddress = (req, res) => {
   if (verify !== true) return formatResult(res, 400, false, verify, null);
   const decode = decodeToken(req);
   const userId = decode.userId;
-  Address.update(req.body, { where: { id: req.query.id, userId } })
-    .then((result) => {
-      if (result[0] === 1) {
-        Address.findOne({ where: { id: req.query.id } }).then((resultNewAddress) => {
-          formatResult(res, 200, true, "Success Edit Address", resultNewAddress);
-        });
-      }
-    })
-    .catch(() => {
-      formatResult(res, 500, false, "Internal Server Error", null);
-    });
+  Address.findAll({ where: { userId, isPrimary: true } }).then(async (resultAllAddress) => {
+    if (resultAllAddress.length > 0) {
+      await Address.update({ isPrimary: false }, { where: { id: resultAllAddress[0].id } });
+    }
+    Address.update(req.body, { where: { id: req.query.id, userId } })
+      .then((result) => {
+        if (result[0] === 1) {
+          Address.findOne({ where: { id: req.query.id } }).then((resultNewAddress) => {
+            formatResult(res, 200, true, "Success Edit Address", resultNewAddress);
+          });
+        }
+      })
+      .catch(() => {
+        formatResult(res, 500, false, "Internal Server Error", null);
+      });
+  });
 };
 
 exports.deleteAddress = (req, res) => {
