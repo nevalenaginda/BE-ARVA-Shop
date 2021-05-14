@@ -66,6 +66,18 @@ exports.deleteAddress = (req, res) => {
   if (verify !== true) return formatResult(res, 400, false, verify, null);
   const decode = decodeToken(req);
   const userId = decode.userId;
+  Address.findAll({ where: { userId, isPrimary: true } }).then((resultAllAddressPrimary) => {
+    if (resultAllAddressPrimary.length < 0) {
+      Address.findAll({ where: { userId } }).then(async (resultAllAddress) => {
+        if (resultAllAddress.length > 0) {
+          await Address.update(
+            { isPrimary: true },
+            { where: { userId, id: resultAllAddress[0].id } }
+          );
+        }
+      });
+    }
+  });
   Address.findOne({ where: { userId, id: req.query.id } })
     .then((resultFind) => {
       if (resultFind) {
