@@ -47,7 +47,9 @@ exports.editAddress = (req, res) => {
     if (resultAllAddress.length > 0 && req.body.isPrimary) {
       await Address.update({ isPrimary: false }, { where: { id: resultAllAddress[0].id } });
     } else {
-      await Address.update({ isPrimary: true }, { where: { id: resultAllAddress[0].id } });
+      Address.findAll({ where: { userId } }).then(async (resultAllAddress2) => {
+        await Address.update({ isPrimary: true }, { where: { id: resultAllAddress2[0].id } });
+      });
     }
     Address.update(req.body, { where: { id: req.query.id, userId } })
       .then((result) => {
