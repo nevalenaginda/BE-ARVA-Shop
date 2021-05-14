@@ -79,7 +79,8 @@ exports.verify = (req, res) => {
 
 exports.login = async (req, res) => {
   const email = req.body.email;
-  const checkEmail = await User.findOne({ where: { email }, order: ["email"] })
+  const role = req.body.role;
+  const checkEmail = await User.findOne({ where: { email, role }, order: ["email"] })
     .then((result) => result.dataValues)
     .catch(() => null);
   if (checkEmail) {
@@ -97,7 +98,7 @@ exports.login = async (req, res) => {
       }
     }
   } else {
-    formatResult(res, 400, false, "Email Not Registered", null);
+    formatResult(res, 400, false, `Email Not Registered As ${role.toUpperCase()}`, null);
   }
 };
 
@@ -108,7 +109,7 @@ exports.update = async (req, res) => {
   const userId = decode.userId;
   if (req.body.active) delete req.body.active;
   if (req.body.password) delete req.body.password;
-  console.log(req.body)
+  console.log(req.body);
   User.update(req.body, { where: { userId }, order: ["userId"] })
     .then(() => {
       User.findOne({ where: { userId }, order: ["userId"] })
