@@ -10,9 +10,9 @@ exports.addAddress = (req, res) => {
   const decode = decodeToken(req);
   const userId = decode.userId;
   req.body.userId = userId;
-  Address.findAll({ where: { userId, isPrimary: true } }).then(async (resultAllAddress) => {
-    if (resultAllAddress.length > 0) {
-      await Address.update({ isPrimary: false }, { where: { id: resultAllAddress[0].id } });
+  Address.findAll({ where: { userId, isPrimary: true } }).then(async (resultAllAddressPrimary) => {
+    if (resultAllAddressPrimary.length < 0) {
+      req.body.isPrimary = true;
     }
     Address.create(req.body)
       .then((result) => {
@@ -66,22 +66,24 @@ exports.deleteAddress = (req, res) => {
   if (verify !== true) return formatResult(res, 400, false, verify, null);
   const decode = decodeToken(req);
   const userId = decode.userId;
-  Address.findAll({ where: { userId, isPrimary: true } }).then((resultAllAddressPrimary) => {
-    if (resultAllAddressPrimary.length < 0) {
-      Address.findAll({ where: { userId } }).then(async (resultAllAddress) => {
-        if (resultAllAddress.length > 0) {
-          await Address.update(
-            { isPrimary: true },
-            { where: { userId, id: resultAllAddress[0].id } }
-          );
-        }
-      });
-    }
-  });
   Address.findOne({ where: { userId, id: req.query.id } })
     .then((resultFind) => {
       if (resultFind) {
         Address.destroy({ where: { id: req.query.id } }).then(() => {
+          Address.findAll({ where: { userId, isPrimary: true } }).then(
+            (resultAllAddressPrimary) => {
+              if (resultAllAddressPrimary.length < 0) {
+                Address.findAll({ where: { userId } }).then(async (resultAllAddress) => {
+                  if (resultAllAddress.length > 0) {
+                    await Address.update(
+                      { isPrimary: true },
+                      { where: { userId, id: resultAllAddress[0].id } }
+                    );
+                  }
+                });
+              }
+            }
+          );
           formatResult(res, 200, true, "Success Delete Address", null);
         });
       } else {
