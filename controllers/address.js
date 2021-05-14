@@ -13,6 +13,11 @@ exports.addAddress = (req, res) => {
   Address.findAll({ where: { userId, isPrimary: true } }).then(async (resultAllAddressPrimary) => {
     if (resultAllAddressPrimary.length === 0) {
       req.body.isPrimary = true;
+    } else {
+      await Address.update(
+        { isPrimary: false },
+        { where: { userId, id: resultAllAddressPrimary[0].id } }
+      );
     }
     Address.create(req.body)
       .then((result) => {
