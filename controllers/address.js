@@ -10,13 +10,18 @@ exports.addAddress = (req, res) => {
   const decode = decodeToken(req);
   const userId = decode.userId;
   req.body.userId = userId;
-  Address.create(req.body)
-    .then((result) => {
-      formatResult(res, 200, true, "Success Add Address", result);
-    })
-    .catch(() => {
-      formatResult(res, 500, false, "Internal Server Error", null);
-    });
+  Address.findAll({ where: { userId, isPrimary: true } }).then(async (resultAllAddress) => {
+    if (resultAllAddress.length > 0) {
+      await Address.update({ isPrimary: false }, { where: { id: resultAllAddress[0].id } });
+    }
+    Address.create(req.body)
+      .then((result) => {
+        formatResult(res, 200, true, "Success Add Address", result);
+      })
+      .catch(() => {
+        formatResult(res, 500, false, "Internal Server Error", null);
+      });
+  });
 };
 
 exports.getListAddress = (req, res) => {
