@@ -280,31 +280,33 @@ exports.getOrderUser = (req, res) => {
           await Product.findOne({
             where: { id: resultAllOrder[i].productId },
           }).then(async (resultProduct) => {
-            await picProduct
-              .findOne({ where: { productId: resultProduct.id } })
-              .then((resultPic) => {
-                if (resultPic) {
-                  arrOrder.push({
-                    id: resultAllOrder[i].orderId,
-                    productId: resultAllOrder[i].productId,
-                    nameProduct: resultProduct.name,
-                    imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
-                    quantity: resultAllOrder[i].quantity,
-                    nameSeller: resultAllOrder[i].seller,
-                    userId: resultAllOrder[i].userId,
-                    quantity: resultAllOrder[i].quantity,
-                    transactionStatus: status.transaction_status,
-                    status:
-                      status.transaction_status !== "pending"
-                        ? status.transaction_status === "expire"
-                          ? "cancelled"
-                          : resultAllOrder[i].status
-                        : "pending",
-                    totalPayment: resultAllOrder[i].totalPayment,
-                    vaNumber: status.va_numbers[0].va_number,
-                  });
-                }
-              });
+            if (resultProduct) {
+              await picProduct
+                .findOne({ where: { productId: resultProduct.id } })
+                .then((resultPic) => {
+                  if (resultPic) {
+                    arrOrder.push({
+                      id: resultAllOrder[i].orderId,
+                      productId: resultAllOrder[i].productId,
+                      nameProduct: resultProduct.name,
+                      imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
+                      quantity: resultAllOrder[i].quantity,
+                      nameSeller: resultAllOrder[i].seller,
+                      userId: resultAllOrder[i].userId,
+                      quantity: resultAllOrder[i].quantity,
+                      transactionStatus: status.transaction_status,
+                      status:
+                        status.transaction_status !== "pending"
+                          ? status.transaction_status === "expire"
+                            ? "cancelled"
+                            : resultAllOrder[i].status
+                          : "pending",
+                      totalPayment: resultAllOrder[i].totalPayment,
+                      vaNumber: status.va_numbers[0].va_number,
+                    });
+                  }
+                });
+            }
           });
         }
         if (arrOrder.length > 0) {
