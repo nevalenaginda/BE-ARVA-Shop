@@ -105,7 +105,7 @@ exports.homePageData = (req, res) => {
     .then((resultNew) => {
       Product.findAll({
         order: [["rating", "desc"]],
-        isArchive: false,
+        where: { isArchive: false },
         limit: 20,
       })
         .then(async (resultPopular) => {
