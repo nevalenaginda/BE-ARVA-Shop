@@ -121,18 +121,19 @@ exports.getOrderByStatus = (req, res) => {
   if (req.query.status && req.query.status !== "") {
     Ordered.findAll({ where: { status: req.query.status } })
       .then(async (resultAllOrder) => {
-        console.log(resultAllOrder);
         for (let i in resultAllOrder) {
           await Product.findOne({
             where: { id: resultAllOrder[i].productId, seller: userId },
           }).then(async (resultProduct) => {
-            if (resultProduct) {
-              const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
-              if (status.transaction_status === "pending") {
-                arrOrder.push({
-                  ...resultAllOrder[i].dataValues,
-                  transactionStatus: status.transaction_status,
-                });
+            if (resultAllOrder[i].status !== "cancelled") {
+              if (resultProduct) {
+                const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
+                if (status.transaction_status === "pending") {
+                  arrOrder.push({
+                    ...resultAllOrder[i].dataValues,
+                    transactionStatus: status.transaction_status,
+                  });
+                }
               } else {
                 if (resultAllOrder[i].status !== "completed") {
                   await Ordered.update(
@@ -141,6 +142,11 @@ exports.getOrderByStatus = (req, res) => {
                   );
                 }
               }
+            } else {
+              arrOrder.push({
+                ...resultAllOrder[i].dataValues,
+                transactionStatus: "cancelled",
+              });
             }
           });
         }
@@ -261,19 +267,21 @@ exports.getOrderUser = (req, res) => {
     .then(async (resultAllOrder) => {
       if (resultAllOrder.length > 0) {
         for (let i in resultAllOrder) {
-          const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
-          if (status.transaction_status !== "pending") {
-            if (status.transaction_status === "expire") {
-              await Ordered.update(
-                { status: "cancelled" },
-                { where: { id: resultAllOrder[i].id } }
-              );
-            } else {
-              if (resultAllOrder[i].status !== "completed") {
+          if (resultAllOrder[i].status !== "cancelled") {
+            const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
+            if (status.transaction_status !== "pending") {
+              if (status.transaction_status === "expire") {
                 await Ordered.update(
-                  { status: "process" },
+                  { status: "cancelled" },
                   { where: { id: resultAllOrder[i].id } }
                 );
+              } else {
+                if (resultAllOrder[i].status !== "completed") {
+                  await Ordered.update(
+                    { status: "process" },
+                    { where: { id: resultAllOrder[i].id } }
+                  );
+                }
               }
             }
           }
