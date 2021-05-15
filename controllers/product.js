@@ -98,12 +98,14 @@ exports.homePageData = (req, res) => {
         ],
       },
       status: "ready",
+      isArchive: false,
     },
     limit: 20,
   })
     .then((resultNew) => {
       Product.findAll({
         order: [["rating", "desc"]],
+        isArchive: false,
         limit: 20,
       })
         .then(async (resultPopular) => {

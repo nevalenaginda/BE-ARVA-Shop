@@ -121,7 +121,7 @@ exports.getOrderByStatus = (req, res) => {
   if (req.query.status && req.query.status !== "") {
     Ordered.findAll({ where: { status: req.query.status } })
       .then(async (resultAllOrder) => {
-        console.log(resultAllOrder)
+        console.log(resultAllOrder);
         for (let i in resultAllOrder) {
           await Product.findOne({
             where: { id: resultAllOrder[i].productId, seller: userId },
@@ -134,11 +134,11 @@ exports.getOrderByStatus = (req, res) => {
                   transactionStatus: status.transaction_status,
                 });
               } else {
-                if(resultAllOrder[i].status !== "process"){
-                await Ordered.update(
-                  { status: "process" },
-                  { where: { id: resultAllOrder[i].id } }
-                );
+                if (resultAllOrder[i].status !== "completed") {
+                  await Ordered.update(
+                    { status: "process" },
+                    { where: { id: resultAllOrder[i].id } }
+                  );
                 }
               }
             }
@@ -160,46 +160,49 @@ exports.getOrderByStatus = (req, res) => {
                 { status: "cancelled" },
                 { where: { id: resultAllOrder[i].id } }
               );
-            } else if(resultAllOrder[i].status !== "process"){
-              if(resultAllOrder[i].status !== "completed"){
-              await Ordered.update( {status: "process"}, {where:{id:resultAllOrder[i].id}})
+            } else if (resultAllOrder[i].status !== "process") {
+              if (resultAllOrder[i].status !== "completed") {
+                await Ordered.update(
+                  { status: "process" },
+                  { where: { id: resultAllOrder[i].id } }
+                );
               }
             }
           }
           await Product.findOne({
             where: { id: resultAllOrder[i].productId, seller: userId },
           }).then((resultProduct) => {
-            if(resultProduct){
-            picProduct.findOne({ where: { productId: resultProduct.id } }).then((resultPic) => {
-              if (resultPic) {
-                arrOrder.push({
-                  id: resultAllOrder[i].orderId,
-                  orderId: resultAllOrder[i].id,
-                  productId: resultAllOrder[i].productId,
-                  nameProduct: resultProduct.name,
-                  imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
-                  quantity: resultAllOrder[i].quantity,
-                  nameSeller: resultAllOrder[i].seller,
-                  userId: resultAllOrder[i].userId,
-                  quantity: resultAllOrder[i].quantity,
-                  transactionStatus: status.transaction_status,
-                  status:
-                    status.transaction_status !== "pending"
-                      ? status.transaction_status === "expire"
-                        ? "cancelled"
-                        : resultAllOrder[i].status
-                      : "pending",
-                  totalPayment: resultAllOrder[i].totalPayment,
-                });
-              }
-            });
+            if (resultProduct) {
+              picProduct.findOne({ where: { productId: resultProduct.id } }).then((resultPic) => {
+                if (resultPic) {
+                  arrOrder.push({
+                    id: resultAllOrder[i].orderId,
+                    orderId: resultAllOrder[i].id,
+                    productId: resultAllOrder[i].productId,
+                    nameProduct: resultProduct.name,
+                    imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
+                    quantity: resultAllOrder[i].quantity,
+                    nameSeller: resultAllOrder[i].seller,
+                    userId: resultAllOrder[i].userId,
+                    quantity: resultAllOrder[i].quantity,
+                    transactionStatus: status.transaction_status,
+                    status:
+                      status.transaction_status !== "pending"
+                        ? status.transaction_status === "expire"
+                          ? "cancelled"
+                          : resultAllOrder[i].status
+                        : "pending",
+                    totalPayment: resultAllOrder[i].totalPayment,
+                  });
+                }
+              });
             }
           });
         }
         formatResult(res, 200, true, "Success Order By Status", arrOrder);
       })
       .catch((err) => {
-console.log(err)
+        console.log(err);
         formatResult(res, 500, false, "Internal Server Error", null);
       });
   }
@@ -256,7 +259,6 @@ exports.getOrderUser = (req, res) => {
   const arrOrder = [];
   Ordered.findAll({ where: cleanCondition(condition) })
     .then(async (resultAllOrder) => {
-
       if (resultAllOrder.length > 0) {
         for (let i in resultAllOrder) {
           const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
@@ -267,35 +269,42 @@ exports.getOrderUser = (req, res) => {
                 { where: { id: resultAllOrder[i].id } }
               );
             } else {
-              await Ordered.update({ status: "process" }, { where: { id: resultAllOrder[i].id } });
+              if (resultAllOrder[i].status !== "completed") {
+                await Ordered.update(
+                  { status: "process" },
+                  { where: { id: resultAllOrder[i].id } }
+                );
+              }
             }
           }
           await Product.findOne({
             where: { id: resultAllOrder[i].productId },
-          }).then(async(resultProduct) => {
-          await picProduct.findOne({ where: { productId: resultProduct.id } }).then((resultPic) => {
-              if (resultPic) {
-                arrOrder.push({
-                  id: resultAllOrder[i].orderId,
-                  productId: resultAllOrder[i].productId,
-                  nameProduct: resultProduct.name,
-                  imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
-                  quantity: resultAllOrder[i].quantity,
-                  nameSeller: resultAllOrder[i].seller,
-                  userId: resultAllOrder[i].userId,
-                  quantity: resultAllOrder[i].quantity,
-                  transactionStatus: status.transaction_status,
-                  status:
-                    status.transaction_status !== "pending"
-                      ? status.transaction_status === "expire"
-                        ? "cancelled"
-                        : resultAllOrder[i].status
-                      : "pending",
-                  totalPayment: resultAllOrder[i].totalPayment,
-                  vaNumber: status.va_numbers[0].va_number,
-                });
-              }
-            });
+          }).then(async (resultProduct) => {
+            await picProduct
+              .findOne({ where: { productId: resultProduct.id } })
+              .then((resultPic) => {
+                if (resultPic) {
+                  arrOrder.push({
+                    id: resultAllOrder[i].orderId,
+                    productId: resultAllOrder[i].productId,
+                    nameProduct: resultProduct.name,
+                    imageProduct: `${process.env.HOST}/images/${resultPic.image}`,
+                    quantity: resultAllOrder[i].quantity,
+                    nameSeller: resultAllOrder[i].seller,
+                    userId: resultAllOrder[i].userId,
+                    quantity: resultAllOrder[i].quantity,
+                    transactionStatus: status.transaction_status,
+                    status:
+                      status.transaction_status !== "pending"
+                        ? status.transaction_status === "expire"
+                          ? "cancelled"
+                          : resultAllOrder[i].status
+                        : "pending",
+                    totalPayment: resultAllOrder[i].totalPayment,
+                    vaNumber: status.va_numbers[0].va_number,
+                  });
+                }
+              });
           });
         }
         if (arrOrder.length > 0) {
@@ -308,7 +317,7 @@ exports.getOrderUser = (req, res) => {
       }
     })
     .catch((err) => {
-      console.log(err)
+      console.log(err);
       formatResult(res, 500, false, "Internal Server Error", null);
     });
 };
