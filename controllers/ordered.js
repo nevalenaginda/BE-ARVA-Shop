@@ -267,8 +267,8 @@ exports.getOrderUser = (req, res) => {
     .then(async (resultAllOrder) => {
       if (resultAllOrder.length > 0) {
         for (let i in resultAllOrder) {
+          const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
           if (resultAllOrder[i].status !== "cancelled") {
-            const status = await coreApi.transaction.status(resultAllOrder[i].orderId);
             if (status.transaction_status !== "pending") {
               if (status.transaction_status === "expire") {
                 await Ordered.update(
