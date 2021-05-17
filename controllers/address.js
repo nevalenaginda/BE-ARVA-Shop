@@ -11,21 +11,28 @@ exports.addAddress = (req, res) => {
   const userId = decode.userId;
   req.body.userId = userId;
   Address.findAll({ where: { userId, isPrimary: true } }).then(async (resultAllAddressPrimary) => {
-    if (resultAllAddressPrimary.length === 0) {
-      req.body.isPrimary = true;
-    } else {
+    if (resultAllAddressPrimary.length > 0) {
       await Address.update(
         { isPrimary: false },
         { where: { userId, id: resultAllAddressPrimary[0].id } }
       );
+      Address.create(req.body)
+        .then((result) => {
+          formatResult(res, 200, true, "Success Add Address", result);
+        })
+        .catch(() => {
+          formatResult(res, 500, false, "Internal Server Error", null);
+        });
+    } else {
+      req.body.isPrimary = true;
+      Address.create(req.body)
+        .then((result) => {
+          formatResult(res, 200, true, "Success Add Address", result);
+        })
+        .catch(() => {
+          formatResult(res, 500, false, "Internal Server Error", null);
+        });
     }
-    Address.create(req.body)
-      .then((result) => {
-        formatResult(res, 200, true, "Success Add Address", result);
-      })
-      .catch(() => {
-        formatResult(res, 500, false, "Internal Server Error", null);
-      });
   });
 };
 
