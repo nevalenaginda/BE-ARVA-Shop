@@ -25,7 +25,7 @@ module.exports = (sequelize, Sequelize) => {
     },
     methodPayment: {
       type: Sequelize.ENUM,
-      values: ["gopay", "pos", "mastercard"],
+      values: ["gopay", "pos", "mastercard", "bank_transfer"],
     },
   });
 
