@@ -1,14 +1,10 @@
 <p align="center">
   <a href="" rel="noopener">
- <img width=400px height=200px src="https://124135-361502-raikfcquaxqncofqfm.stackpathdns.com/asset/img/banners/blog/rest_api.png" alt="logo"></a>
+ <img width=400px src="https://i.ibb.co/0m3XJDP/Pink-and-Purple-Charity-Store-Logo.png" alt="logo"></a>
 </p>
 
-<h3 align="center">Backend Arva Shop</h3>
-
----
-
 ## 🧐 About
-This is the repository Backend of the Bootcamp Arkademy task
+Backend ARVA Shop
 
 ## 💻 Installation
 
