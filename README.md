@@ -12,7 +12,7 @@ Follow the steps below
 
 1. Clone this repo
 ```
-git clone https://github.com/therevolt/BE-ARVA-Shop
+git clone https://github.com/nevalenaginda/BE-ARVA-Shop
 cd BE-ARVA-Shop
 ```
 
@@ -107,7 +107,7 @@ Object data contains content according to the request
 
 ## 💻 FrontEnd
 
-Repo Frontend : https://github.com/therevolt/arva-online-shop
+Repo Frontend : https://github.com/nevalenaginda/arva-online-shop
 
 ## 💻 Live Demo
 
